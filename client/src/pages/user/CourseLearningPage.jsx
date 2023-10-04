@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import completed from "../../assets/courseLearning/completed.png";
@@ -7,6 +7,7 @@ import notStart from "../../assets/courseLearning/notStart.png";
 import ToggleList from "../../components/user/ToggleList";
 import { useAuth } from "../../context/authentication";
 import useCourselearning from "../../hook/useCourselearning";
+import AssignmentBox from "../../components/user/AssignmentBox";
 
 function CourseLearningPage() {
   const videoRef = useRef(null);
@@ -30,10 +31,23 @@ function CourseLearningPage() {
     handleVideoEnd,
     handleVideoStart,
     handleAssignment,
+    userCourseDetailId,
+    currentAssignment,
+    setCurrentAssignment,
+    getUserId,
+    setGetUserId,
   } = useCourselearning();
-
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [preAssignment, setPreAssignment] = useState({
+    assignmentDetail: "",
+    assignmentAnswer: "",
+    assignmentDuration: 0,
+    assignmentStartedAt: null,
+    assignmentStatus: "",
+  });
   useEffect(() => {
     if (auth.isAuthenicated) {
+      setGetUserId(auth.session.user.user_id);
       const userId = auth.session.user.user_id;
       getUserCoursesLearning(userId);
     }
@@ -45,6 +59,13 @@ function CourseLearningPage() {
         subLessonName: subLessonArray[0].sub_lesson_name,
         subLessonVideo: subLessonArray[0].sub_lesson_video,
         subLessonId: subLessonArray[0].sub_lesson_id,
+        subLessonStatus: subLessonArray[0].status_value,
+      });
+      setCurrentAssignment({
+        assignmentDetail: subLessonArray[0].assignment_detail,
+        assignmentAnswer: subLessonArray[0].assignment_answer,
+        assignmentDuration: subLessonArray[0].assignment_duration,
+        assignmentStartedAt: subLessonArray[0].assignment_started_at,
       });
       setSubLessonStatus(subLessonArray.map((initial) => initial.status_value));
     }
@@ -60,6 +81,15 @@ function CourseLearningPage() {
         subLessonName: subLessonArray[lessonPage - 1].sub_lesson_name,
         subLessonVideo: subLessonArray[lessonPage - 1].sub_lesson_video,
         subLessonId: subLessonArray[lessonPage - 1].sub_lesson_id,
+        subLessonStatus: subLessonArray[lessonPage - 1].status_value,
+      });
+      setCurrentAssignment({
+        assignmentDetail: subLessonArray[lessonPage - 1].assignment_detail,
+        assignmentAnswer: subLessonArray[lessonPage - 1].assignment_answer,
+        assignmentDuration: subLessonArray[lessonPage - 1].assignment_duration,
+        assignmentStartedAt:
+          subLessonArray[lessonPage - 1].assignment_started_at,
+        assignmentStatus: subLessonArray[lessonPage - 1].assignment_status,
       });
     }
   }, [lessonPage, subLessonArray]);
@@ -146,8 +176,30 @@ function CourseLearningPage() {
                                   handleTitleClick(
                                     item.sub_lesson_name,
                                     item.sub_lesson_video,
-                                    item.sub_lesson_id
-                                  )
+                                    item.sub_lesson_id,
+                                    {
+                                      assignment_detail: item.assignment_detail,
+                                      assignment_answer: item.assignment_answer,
+                                      assignment_duration:
+                                        item.assignment_duration,
+                                      assignment_started_at:
+                                        item.assignment_started_at,
+                                      assignment_status:
+                                        item.assignment_status === "not_started"
+                                          ? null
+                                          : item.assignment_status,
+                                    }
+                                  ).then(() => {
+                                    setPreAssignment({
+                                      assignmentAnswer: item.assignment_answer,
+                                      assignmentDetail: item.assignment_detail,
+                                      assignmentDuration:
+                                        item.assignment_duration,
+                                      assignmentStartedAt:
+                                        item.assignment_started_at,
+                                      assignmentStatus: item.assignment_status,
+                                    });
+                                  })
                                 }
                                 className="w-[257px] h-[48px] text-left ml-3 whitespace-normal"
                               >
@@ -158,7 +210,9 @@ function CourseLearningPage() {
                         })
                       : ""
                   }
-                  isOpen={toggleStates[index]}
+                  isOpen={
+                    index === 0 ? !toggleStates[index] : toggleStates[index]
+                  }
                   toggle={() => toggle(index)}
                 />
               ))}
@@ -180,29 +234,16 @@ function CourseLearningPage() {
                 src={currentSubLesson.subLessonVideo}
                 className="w-[739px] h-[460px]"
               ></video>
-
-              {handleAssignment() ? (
-                <div className="w-[739px] h-[314px] bg-blue-100 flex flex-col items-center rounded-lg mt-[70px]">
-                  <div className="w-[691px] h-[32px] flex justify-between items-center mt-4">
-                    <div className="text-body1 text-black">Assignment</div>
-                    <div className="text-[#996500] text-[16px] w-[79px] bg-[#FFFBDB] border flex justify-center p-1">
-                      Pending
-                    </div>
-                  </div>
-                  <div className="w-[691px] h-[124px] flex flex-col mt-5">
-                    <div className="text-[16px] mb-2">
-                      What are the 4 elements of this lesson?
-                    </div>
-                    <div className="w-[691px] h-[96px] text-[16px] text-gray-600 border-1 rounded-lg bg-white pl-5 pt-3">
-                      Answer...
-                    </div>
-                  </div>
-                  <div className="w-[691px] flex justify-start mt-8">
-                    <button className="w-[203px] h-[60px] text-[16px] text-white font-bold rounded-xl bg-blue-500">
-                      Send Assignment
-                    </button>
-                  </div>
-                </div>
+              {currentSubLesson.subLessonStatus === "completed" ? (
+                <AssignmentBox
+                  assignmentDetail={currentAssignment.assignmentDetail}
+                  assignmentStatus={currentAssignment.assignmentStatus}
+                  assignmentAnswer={currentAssignment.assignmentAnswer}
+                  assignmentDuration={currentAssignment.assignmentDuration}
+                  assignmentStartedAt={currentAssignment.assignmentStartedAt}
+                  userCourseDetailId={userCourseDetailId}
+                  subLessonId={currentSubLesson.subLessonId}
+                />
               ) : (
                 ""
               )}

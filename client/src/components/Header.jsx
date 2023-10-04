@@ -135,7 +135,7 @@ function Header() {
                       <span id="myCourses">My Courses</span>
                     </div>
                   </Link>
-                  <Link to="/myhomeworks">
+                  <Link to="/assignments">
                     <div className="flex items-center rounded-md hover:bg-gray-200">
                       <img
                         id="myHomework"
